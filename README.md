@@ -1,5 +1,5 @@
 # tools
 
-Este é um repositório para compartilhar algumas ferramentas úteis.
+This is a repository to share some useful tools.
 
-Baixe o arquivo fsum_v2.52.zip somente na indisponibilidade do site oficial https://www.slavasoft.com/fsum/.
+Download the file fsum_v2.52.zip only if the official website https://www.slavasoft.com/fsum/ is unavailable.
