@@ -3,68 +3,69 @@
 
 @echo off
 
-echo Extraction script of relevant volatile informations.
+echo Volatile data extraction script on Windows.
 echo Run with admin privileges.
-set /p resultFolder="Insert the root folder to save the result. It will be created a folder inside:"
+set /p resultFolder="Insert the folder path where you want the result to be saved. A folder with the host name will be created inside this path."
 rd /s /q "%resultFolder%\%computername%_result"
 mkdir "%resultFolder%\%computername%_result"
 set COMPUTERNAMERESULT="%resultFolder%\%computername%_result"
 
 :: Insert the Sysinternals path here
-set sysintfolder="C:\Users\nilso\Desktop\tools\Sysinternals\"
+set /p sysinternalsFolder="This script uses some tools of Sysinternals, so insert Sysinternals folder path in your system."
 
-echo Coletando Data e Hora
-date /t > %COMPUTERNAMERESULT%\data_hora.txt
-time /t >> %COMPUTERNAMERESULT%\data_hora.txt
-systeminfo | find Fuso >> %COMPUTERNAMERESULT%\data_hora.txt
-systeminfo | find Time Zone >> %COMPUTERNAMERESULT%\data_hora.txt
+echo Collecting date and time
+date /t > %COMPUTERNAMERESULT%\date-time.txt
+time /t >> %COMPUTERNAMERESULT%\date-time.txt
+systeminfo | find Fuso >> %COMPUTERNAMERESULT%\date-time.txt
+systeminfo | find Time Zone >> %COMPUTERNAMERESULT%\date-time.txt
 
-echo Coletando Numero Serial do Computador
-wmic bios get serialnumber > %COMPUTERNAMERESULT%\numero_serial.txt
+echo Collecting computer serial number
+wmic bios get serialnumber > %COMPUTERNAMERESULT%\serialnumber.txt
 
-echo Coletando SID do Computador
-%sysintfolder%psgetsid -nobanner -accepteula >> %COMPUTERNAMERESULT%\SID.txt
+echo Collecting computer SID
+%sysinternalsFolder%psgetsid -nobanner -accepteula >> %COMPUTERNAMERESULT%\SID.txt
 
-echo Coletando Informacoes do Computador
-systeminfo > %COMPUTERNAMERESULT%\info_computador.txt
-echo: >> %COMPUTERNAMERESULT%\info_computador.txt
-echo: >> %COMPUTERNAMERESULT%\info_computador.txt
-%sysintfolder%psinfo -d -s -h -nobanner -accepteula >> %COMPUTERNAMERESULT%\info_computador.txt
+echo Collecting system information
+systeminfo > %COMPUTERNAMERESULT%\systeminfo.txt
+echo: >> %COMPUTERNAMERESULT%\systeminfo.txt
+echo: >> %COMPUTERNAMERESULT%\systeminfo.txt
+%sysinternalsFolder%psinfo -d -s -h -nobanner -accepteula >> %COMPUTERNAMERESULT%\systeminfo.txt
 
-echo Obtendo Informacoes das Interfaces de Rede
-ipconfig /all > %COMPUTERNAMERESULT%\ip_mac_interfaces.txt
+echo Collecting information from network interfaces
+ipconfig /all > %COMPUTERNAMERESULT%\ipconfig.txt
 
-echo Coletando Historico
-doskey /history > %COMPUTERNAMERESULT%\historico.txt
+echo Collecting command history
+doskey /history > %COMPUTERNAMERESULT%\command-history.txt
 
-echo Coletando Usuarios Autenticados
-%sysintfolder%psloggedon -nobanner -accepteula > %COMPUTERNAMERESULT%\usuarios_autenticados.txt
+echo Collecting logged on users
+%sysinternalsFolder%psloggedon -nobanner -accepteula > %COMPUTERNAMERESULT%\loggedon.txt
 
-echo Coletando Conexoes, Portas e Processos
-netstat -nabo > %COMPUTERNAMERESULT%\conexoes_portas_processos.txt
+echo Collecting network statistics
+netstat -nabo > %COMPUTERNAMERESULT%\netstat.txt
 
-echo Coletando Tabela de Rotas
-netstat -rn > %COMPUTERNAMERESULT%\rotas.txt
+echo Collecting route table
+netstat -rn > %COMPUTERNAMERESULT%\routes.txt
 
-echo Coletando Compartilhamentos
-net use > %COMPUTERNAMERESULT%\compartilhamentos.txt
+echo Collecting network shares
+net use > %COMPUTERNAMERESULT%\network-shares.txt
 
-echo Coletando Arquivos Compartilhados Abertos em um Servidor
-net file > %COMPUTERNAMERESULT%\arquivos_abertos.txt
+echo Collecting files opened on the network
+net file > %COMPUTERNAMERESULT%\open-files.txt
 
-echo Coletando Sessoes Abertas com outros sistemas
-net sessions > %COMPUTERNAMERESULT%\sessoes_abertas.txt
+echo Collecting active sessions from network shares
+net sessions > %COMPUTERNAMERESULT%\network-shares-sessions.txt
 
-echo Coletando Lista de Processos
-%sysintfolder%pslist -nobanner -accepteula > %COMPUTERNAMERESULT%\processos.txt
+echo Collecting process list
+%sysinternalsFolder%pslist -nobanner -accepteula > %COMPUTERNAMERESULT%\process-list.txt
 
-echo Coletando Processos e seus Modulos
-tasklist /M > %COMPUTERNAMERESULT%\processos_modulos.txt
+echo Collecting process list and modules
+tasklist /M > %COMPUTERNAMERESULT%\process-modules.txt
 
-echo Coletando Processos da Sessao de Logon
-%sysintfolder%logonsessions -p -nobanner -accepteula > %COMPUTERNAMERESULT%\processos_sessaodelogon.txt
+echo Collecting processes from each logon session
+%sysinternalsFolder%logonsessions -p -nobanner -accepteula > %COMPUTERNAMERESULT%\process-logonsessions.txt
 
-echo Gerando Hashes
+echo Generating hashes.txt
 cd %COMPUTERNAMERESULT%\
 fsum -sha256 *.txt > ..\hashes.txt
 move ..\hashes.txt .
+echo "Volatile data extraction finished."
