@@ -2,6 +2,10 @@
 
 This is a repository to share some useful tools.
 
+* templates
+
+Directory with templates of reports, Information Security Policies, playbooks, runbooks...
+
 * ERUNT
 
 ERUNT is a useful tool to extract registry keys while the system is still on.
