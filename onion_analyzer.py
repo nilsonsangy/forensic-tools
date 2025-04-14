@@ -17,7 +17,7 @@ def extract_onion_links(url):
         print(f"Error accessing the URL: {e}")
         return []
 
-def open_links_in_tor(onion_links, tor_path):
+def open_links_in_tor(onion_links, tor_path): 
     """
     Open all .onion links in a new Tor Browser window, each in a new tab.
     """
