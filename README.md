@@ -22,7 +22,8 @@ linux_collector.sh is a script for extracting volatile data on Linux systems.
 ### onion_analyzer
 
 onion_analyzer.py is a script that collect onion links in a website and open each one in a TOR browser tab.
-You neede to cofigure the TOR path on the system. The script collects the TOR path in the environment variable called TOR_BROWSER_PATH. If the local variable is not set, the script prompts the user for the path at runtime.
+
+You need to cofigure the TOR path on the system. The script collects the TOR path in the environment variable called TOR_BROWSER_PATH. If the local variable is not set, the script prompts the user for the path at runtime.
 
 ### windows_collector
 
