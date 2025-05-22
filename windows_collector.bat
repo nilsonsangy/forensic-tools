@@ -85,6 +85,25 @@ net share > %COMPUTERNAMERESULT%\shared-folders.txt
 echo Collecting Credential Guard information
 "%sysinternalsFolder%\dgreadiness_v3.6.exe" -status > %COMPUTERNAMERESULT%\credential-guard-info.txt
 
+echo Checking if UAC is enabled
+reg query HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v EnableLUA > %COMPUTERNAMERESULT%\uac-status.txt
+
+:: Checking if anonymous enumeration of SAM accounts and shares is enabled
+echo Checking anonymous enumeration of SAM accounts and shares
+reg query HKLM\SYSTEM\CurrentControlSet\Control\Lsa /v RestrictAnonymous > %COMPUTERNAMERESULT%\anonymous-enum-status.txt
+
+:: Checking if Remote Desktop is enabled
+echo Checking if Remote Desktop is enabled
+reg query "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections > %COMPUTERNAMERESULT%\remote-desktop-status.txt
+
+:: Checking if antivirus is enabled and updated
+echo Checking if antivirus is enabled and updated
+wmic /namespace:\\root\SecurityCenter2 path AntiVirusProduct get displayName,productState > %COMPUTERNAMERESULT%\antivirus-status.txt
+
+:: Checking if Windows Firewall is enabled and updated
+echo Checking if Windows Firewall is enabled and updated
+netsh advfirewall show allprofiles > %COMPUTERNAMERESULT%\firewall-status.txt
+
 echo Generating hashes.txt
 cd %COMPUTERNAMERESULT%\
 fsum -sha256 *.txt > ..\hashes.txt 2>nul

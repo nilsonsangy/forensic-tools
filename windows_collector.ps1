@@ -125,4 +125,24 @@ Get-ChildItem -File | ForEach-Object {
     }
 }
 
+# Check if UAC is enabled
+Write-Host "Checking if UAC is enabled"
+(Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name EnableLUA).EnableLUA | Out-File -FilePath "$computerResultFolder\uac-status.txt"
+
+# Check if anonymous enumeration of SAM accounts and shares is enabled
+Write-Host "Checking anonymous enumeration of SAM accounts and shares"
+(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name RestrictAnonymous).RestrictAnonymous | Out-File -FilePath "$computerResultFolder\anonymous-enum-status.txt"
+
+# Check if Remote Desktop is enabled
+Write-Host "Checking if Remote Desktop is enabled"
+(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server" -Name fDenyTSConnections).fDenyTSConnections | Out-File -FilePath "$computerResultFolder\remote-desktop-status.txt"
+
+# Check if antivirus is enabled and updated
+Write-Host "Checking if antivirus is enabled and updated"
+Get-CimInstance -Namespace "root/SecurityCenter2" -ClassName AntiVirusProduct | Select-Object displayName,productState | Out-File -FilePath "$computerResultFolder\antivirus-status.txt"
+
+# Check if Windows Firewall is enabled and updated
+Write-Host "Checking if Windows Firewall is enabled and updated"
+netsh advfirewall show allprofiles | Out-File -FilePath "$computerResultFolder\firewall-status.txt"
+
 Write-Host "Volatile data extraction finished. Results saved in '$computerResultFolder'."
