@@ -95,13 +95,19 @@ wmic useraccount get /all | Out-File -FilePath "$computerResultFolder\useraccoun
 
 # Collect process integrity levels
 Get-CimInstance Win32_Process | ForEach-Object {
-    $integrityLevel = (Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue).GetOwner().Sid | ForEach-Object {
-        if ($_ -match "S-1-16-(\d+)") { [int]$matches[1] } else { "Unknown" }
-    }
-    [PSCustomObject]@{
-        ProcessName = $_.Name
-        ProcessId = $_.ProcessId
-        IntegrityLevel = $integrityLevel
+    $process = Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue
+    if ($process) {
+        $ownerInfo = (Get-WmiObject Win32_Process -Filter "ProcessId = $($_.ProcessId)" -ErrorAction SilentlyContinue).GetOwner()
+        $integrityLevel = if ($ownerInfo) {
+            if ($ownerInfo.Sid -match "S-1-16-(\d+)") { [int]$matches[1] } else { "Unknown" }
+        } else {
+            "Unknown"
+        }
+        [PSCustomObject]@{
+            ProcessName = $_.Name
+            ProcessId = $_.ProcessId
+            IntegrityLevel = $integrityLevel
+        }
     }
 } | Out-File -FilePath "$computerResultFolder\process-integrity-levels.txt"
 
