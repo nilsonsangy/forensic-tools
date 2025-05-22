@@ -111,9 +111,6 @@ Get-Process | Select-Object Name, Id, CPU, WorkingSet, StartTime, Path | Out-Fil
 # Collect shared folders and files
 net share | Out-File -FilePath "$computerResultFolder\shared-folders.txt"
 
-# Collect Credential Guard information
-& "$sysinternalsFolder\dgreadiness_v3.6.exe" -status | Out-File -FilePath "$computerResultFolder\credential-guard-info.txt"
-
 # Generate hashes.txt
 Set-Location -Path $computerResultFolder
 Get-ChildItem -File | ForEach-Object {
