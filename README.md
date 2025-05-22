@@ -2,16 +2,6 @@
 
 This repository contains a collection of tools and scripts designed to assist in forensic analysis, incident response, and system data collection.
 
-## templates
-
-This directory contains templates for:
-- Reports
-- Information Security Policies
-- Playbooks
-- Runbooks
-
-These templates can be used as a starting point for creating standardized documentation in forensic and security operations.
-
 ## ERUNT
 
 **ERUNT** (Emergency Recovery Utility NT) is a tool for extracting and backing up Windows registry keys while the system is running. It is useful for preserving critical system configurations during forensic investigations.

@@ -22,9 +22,13 @@ if (Test-Path -Path $outputFile) {
     Remove-Item -Path $outputFile -Force
 }
 
-# Add the timestamp to the first line of hashes.txt
+# Add the script link on GitHub to the first line of hashes.txt
+$githubLink = "https://github.com/nilsonsangy/forensic-tools/blob/main/generate_hashes.ps1"
+"Script source: $githubLink`n" | Out-File -FilePath $outputFile -Encoding UTF8
+
+# Add the timestamp to the next line of hashes.txt
 $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-"Hashes generated on: $timestamp`n" | Out-File -FilePath $outputFile -Encoding UTF8
+"Hashes generated on: $timestamp`n" | Out-File -FilePath $outputFile -Append -Encoding UTF8
 
 # Calculate the SHA256 hash of each file in the folder (including subfolders) and save it to hashes.txt
 Get-ChildItem -Path $folderPath -File -Recurse | ForEach-Object {
