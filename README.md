@@ -52,4 +52,9 @@ This tool is useful for analyzing websites that host `.onion` links on the dark 
 - System uptime
 - Logged-in users
 
-This script is designed for incident response and forensic analysis on Windows systems.
+**windows_collector.ps1** is a PowerShell script designed for similar purposes but offers enhanced capabilities, such as:
+- Collecting detailed event logs
+- Gathering installed software information
+- Extracting user account details
+
+Both scripts are designed for incident response and forensic analysis on Windows systems. Choose the appropriate script based on the level of detail required and the system's capabilities.
