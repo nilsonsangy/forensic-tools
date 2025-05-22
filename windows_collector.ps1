@@ -90,6 +90,30 @@ Get-Service | Out-File -FilePath "$computerResultFolder\services.txt"
 # Collect autorun programs
 & "$sysinternalsFolder\autoruns.exe" -a -nobanner -accepteula | Out-File -FilePath "$computerResultFolder\autoruns.txt"
 
+# Collect user account information
+wmic useraccount get /all | Out-File -FilePath "$computerResultFolder\useraccount-info.txt"
+
+# Collect process integrity levels
+Get-CimInstance Win32_Process | ForEach-Object {
+    $integrityLevel = (Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue).GetOwner().Sid | ForEach-Object {
+        if ($_ -match "S-1-16-(\d+)") { [int]$matches[1] } else { "Unknown" }
+    }
+    [PSCustomObject]@{
+        ProcessName = $_.Name
+        ProcessId = $_.ProcessId
+        IntegrityLevel = $integrityLevel
+    }
+} | Out-File -FilePath "$computerResultFolder\process-integrity-levels.txt"
+
+# Collect detailed process list
+Get-Process | Select-Object Name, Id, CPU, WorkingSet, StartTime, Path | Out-File -FilePath "$computerResultFolder\detailed-process-list.txt"
+
+# Collect shared folders and files
+net share | Out-File -FilePath "$computerResultFolder\shared-folders.txt"
+
+# Collect Credential Guard information
+& "$sysinternalsFolder\dgreadiness_v3.6.exe" -status | Out-File -FilePath "$computerResultFolder\credential-guard-info.txt"
+
 # Generate hashes.txt
 Set-Location -Path $computerResultFolder
 Get-ChildItem -File | ForEach-Object {

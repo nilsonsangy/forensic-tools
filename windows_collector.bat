@@ -70,6 +70,21 @@ tasklist /M > %COMPUTERNAMERESULT%\process-modules.txt
 echo Collecting processes from each logon session
 %sysinternalsFolder%\logonsessions -p -nobanner -accepteula > %COMPUTERNAMERESULT%\process-logonsessions.txt
 
+echo Collecting user account information
+wmic useraccount get /all > %COMPUTERNAMERESULT%\useraccount-info.txt
+
+echo Collecting process integrity levels
+wmic process get Caption,ProcessId,ExecutablePath,CommandLine,OSName,HandleCount,WorkingSetSize,Priority,ThreadCount,Status > %COMPUTERNAMERESULT%\process-integrity-levels.txt
+
+echo Collecting detailed process list
+wmic process list full > %COMPUTERNAMERESULT%\detailed-process-list.txt
+
+echo Collecting shared folders and files
+net share > %COMPUTERNAMERESULT%\shared-folders.txt
+
+echo Collecting Credential Guard information
+"%sysinternalsFolder%\dgreadiness_v3.6.exe" -status > %COMPUTERNAMERESULT%\credential-guard-info.txt
+
 echo Generating hashes.txt
 cd %COMPUTERNAMERESULT%\
 fsum -sha256 *.txt > ..\hashes.txt 2>nul
