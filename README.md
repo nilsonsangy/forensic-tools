@@ -63,7 +63,7 @@ Both scripts are designed for incident response and forensic analysis on Windows
 
 1. **Clone the repository:**
    ```sh
-   git clone https://github.com/your-username/forensic-tools.git
+   git clone https://github.com/nilsonsangy/forensic-tools.git
    cd forensic-tools
    ```
 
