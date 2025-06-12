@@ -58,3 +58,41 @@ This tool is useful for analyzing websites that host `.onion` links on the dark 
 - Extracting user account details
 
 Both scripts are designed for incident response and forensic analysis on Windows systems. Choose the appropriate script based on the level of detail required and the system's capabilities.
+
+## How to install requirements and run the scripts
+
+1. **Clone the repository:**
+   ```sh
+   git clone https://github.com/your-username/forensic-tools.git
+   cd forensic-tools
+   ```
+
+2. **Linux:**
+   - Give execution permission to the script:
+     ```sh
+     chmod +x linux_collector.sh
+     ```
+   - Run the script:
+     ```sh
+     sudo ./linux_collector.sh
+     ```
+
+3. **Windows:**
+   - Run `windows_collector.bat` or `windows_collector.ps1` as administrator.
+   - For PowerShell, use:
+     ```powershell
+     .\windows_collector.ps1
+     ```
+
+4. **Python (onion_analyzer):**
+   - Install Python 3.x.
+   - Install the dependencies:
+     ```sh
+     pip install -r requirements.txt
+     ```
+   - Run the script:
+     ```sh
+     python onion_analyzer.py
+     ```
+
+> **Note:** Some scripts require administrator/root privileges and specific system dependencies (e.g., dmidecode, lsof, netstat, etc.).
