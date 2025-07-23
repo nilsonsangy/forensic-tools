@@ -1,3 +1,6 @@
+# Author: Nilson Sangy
+# https://github.com/nilsonsangy/forensic-tools
+
 import os
 import re
 import requests
