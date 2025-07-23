@@ -5,6 +5,7 @@ import os
 import re
 import requests
 import subprocess
+import platform
 
 def extract_onion_links(url):
     """
@@ -26,7 +27,13 @@ def open_links_in_tor(onion_links, tor_path):
     """
     try:
         if onion_links:
-            subprocess.Popen([tor_path, "-url"] + onion_links)
+            if platform.system() == "Windows":
+                # If the user provided the Tor Browser folder, append the correct path
+                if os.path.isdir(tor_path):
+                    tor_path = os.path.join(tor_path, "Browser", "firefox.exe")
+                subprocess.Popen([tor_path] + onion_links)
+            else:
+                subprocess.Popen([tor_path, "-url"] + onion_links)
             print(f"Opening {len(onion_links)} links in a new Tor Browser window.")
         else:
             print("No links to open.")

@@ -61,6 +61,22 @@ ps aux > ./$FOLDERRESULT/ps.txt
 echo "Collecting modules informations..."
 lsmod > ./$FOLDERRESULT/modulos.txt 2> /dev/null
 
+echo "Collecting installed packages..."
+if command -v dpkg > /dev/null; then
+    dpkg -l > ./$FOLDERRESULT/installed_packages.txt
+elif command -v rpm > /dev/null; then
+    rpm -qa > ./$FOLDERRESULT/installed_packages.txt
+else
+    echo "Package manager not supported" > ./$FOLDERRESULT/installed_packages.txt
+fi
+
+echo "Collecting users..."
+if command -v getent > /dev/null; then
+    getent passwd | cut -d: -f1 > ./$FOLDERRESULT/users.txt
+else
+    echo "Command 'getent' not found. Unable to collect users." > ./$FOLDERRESULT/users.txt
+fi
+
 echo "Hashing... "
 sha256sum ./$FOLDERRESULT/*.txt > ./$FOLDERRESULT/hashes.txt
 

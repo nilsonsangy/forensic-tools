@@ -52,4 +52,47 @@ This tool is useful for analyzing websites that host `.onion` links on the dark 
 - System uptime
 - Logged-in users
 
-This script is designed for incident response and forensic analysis on Windows systems.
+**windows_collector.ps1** is a PowerShell script designed for similar purposes but offers enhanced capabilities, such as:
+- Collecting detailed event logs
+- Gathering installed software information
+- Extracting user account details
+
+Both scripts are designed for incident response and forensic analysis on Windows systems. Choose the appropriate script based on the level of detail required and the system's capabilities.
+
+## How to install requirements and run the scripts
+
+1. **Clone the repository:**
+   ```sh
+   git clone https://github.com/nilsonsangy/forensic-tools.git
+   cd forensic-tools
+   ```
+
+2. **Linux:**
+   - Give execution permission to the script:
+     ```sh
+     chmod +x linux_collector.sh
+     ```
+   - Run the script:
+     ```sh
+     sudo ./linux_collector.sh
+     ```
+
+3. **Windows:**
+   - Run `windows_collector.bat` or `windows_collector.ps1` as administrator.
+   - For PowerShell, use:
+     ```powershell
+     .\windows_collector.ps1
+     ```
+
+4. **Python (onion_analyzer):**
+   - Install Python 3.x.
+   - Install the dependencies:
+     ```sh
+     pip install -r requirements.txt
+     ```
+   - Run the script:
+     ```sh
+     python onion_analyzer.py
+     ```
+
+> **Note:** Some scripts require administrator/root privileges and specific system dependencies (e.g., dmidecode, lsof, netstat, etc.).
