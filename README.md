@@ -1,98 +1,317 @@
-# forensic-tools
+<div align="center">
 
-This repository contains a collection of tools and scripts designed to assist in forensic analysis, incident response, and system data collection.
+# 🔍 Forensic Tools
 
-## ERUNT
+**A comprehensive toolkit for Digital Forensics, Incident Response, and System Data Collection**
 
-**ERUNT** (Emergency Recovery Utility NT) is a tool for extracting and backing up Windows registry keys while the system is running. It is useful for preserving critical system configurations during forensic investigations.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.x](https://img.shields.io/badge/python-3.x-blue.svg)](https://www.python.org/downloads/)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey)](https://github.com/nilsonsangy/forensic-tools)
+[![PowerShell](https://img.shields.io/badge/PowerShell-5.1+-blue.svg)](https://docs.microsoft.com/en-us/powershell/)
 
-## fsum
+*Empowering investigators, security professionals, and researchers with automated forensic analysis tools*
 
-**fsum.exe** is a command-line tool for generating file hashes. It supports multiple algorithms, including MD5, SHA1, and SHA256.  
-- Use this tool to verify file integrity or detect changes in files.  
-- If the official website [https://www.slavasoft.com/fsum/](https://www.slavasoft.com/fsum/) is unavailable, you can download `fsum_v2.52.zip` from this repository.
+</div>
 
-## generate_hashes
+---
 
-**generate_hashes.ps1** is a PowerShell script that:
-- Calculates the SHA256 hash of all files in a specified folder (including subfolders).
-- Saves the results to a `hashes.txt` file in the same folder.
-- Includes a timestamp in the `hashes.txt` file to indicate when the hashes were generated.
-- Calculates and displays the SHA256 hash of the `hashes.txt` file itself.
+## 📋 Table of Contents
 
-This script is useful for verifying file integrity and detecting unauthorized changes.
+- [🛠️ Tools Overview](#️-tools-overview)
+- [🚀 Quick Start](#-quick-start)
+- [🔧 Installation](#-installation)
+- [📖 Usage](#-usage)
+  - [Windows Data Collection](#windows-data-collection)
+  - [Linux Data Collection](#linux-data-collection)
+  - [Steganography Analysis](#steganography-analysis)
+  - [Onion Link Analyzer](#onion-link-analyzer)
+  - [Hash Generation](#hash-generation)
+  - [BitLocker Management](#bitlocker-management)
+- [⚙️ Requirements](#️-requirements)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
+- [💝 Donations](#-donations)
+- [⚠️ Disclaimer](#️-disclaimer)
+- [📞 Contact](#-contact)
 
-## linux_collector
+---
 
-**linux_collector.sh** is a shell script for extracting volatile data from Linux systems. It collects information such as:
-- Running processes
-- Network connections
-- System uptime
-- Logged-in users
+## 🛠️ Tools Overview
 
-This script is designed for incident response and forensic analysis on Linux systems.
+| Tool                      | Description                                      | Platform            | Output                | Use Case                |
+|---------------------------|--------------------------------------------------|---------------------|-----------------------|-------------------------|
+| **Windows Collector**     | Extract volatile data, processes, network info   | Windows             | Text reports          | Incident response       |
+| **Linux Collector**       | Collect system data, processes, network info     | Linux               | Text reports          | Incident response       |
+| **Steganography Tool**    | Hide/extract files in images using LSB           | Cross-platform      | Modified images/files | Evidence analysis       |
+| **Onion Analyzer**        | Extract and analyze .onion links from websites   | Cross-platform      | Tor Browser tabs      | Dark web investigation  |
+| **Hash Generator**        | Generate SHA256 hashes for file integrity        | Windows             | Hash files            | Evidence verification   |
+| **BitLocker Disabler**    | Manage BitLocker encryption settings             | Windows             | System changes        | Forensic preparation    |
+| **ERUNT**                 | Windows registry backup utility                   | Windows             | Registry backups      | System preservation     |
+| **fsum**                  | File hash generation tool                         | Windows             | Hash files            | Integrity verification  |
 
-## onion_analyzer
+---
 
-**onion_analyzer.py** is a Python script that:
-- Extracts `.onion` links from a specified website.
-- Opens each `.onion` link in a new tab of the Tor Browser.
+## 🚀 Quick Start
 
-### Requirements:
-- The Tor Browser path must be configured in the system environment variable `TOR_BROWSER_PATH`.
-- If the variable is not set, the script will prompt the user to enter the path manually.
+```powershell
+# Clone the repository
+git clone https://github.com/nilsonsangy/forensic-tools.git
+cd forensic-tools
 
-This tool is useful for analyzing websites that host `.onion` links on the dark web.
+# Run the environment preparation script (Windows)
+./setup_python_env.ps1
+```
 
-## windows_collector
+Or set up manually (see Installation).
 
-**windows_collector.bat** is a batch script for extracting volatile data from Windows systems. It collects information such as:
-- Running processes
-- Network connections
-- System uptime
-- Logged-in users
+---
 
-**windows_collector.ps1** is a PowerShell script designed for similar purposes but offers enhanced capabilities, such as:
-- Collecting detailed event logs
-- Gathering installed software information
-- Extracting user account details
+## 🔧 Installation
 
-Both scripts are designed for incident response and forensic analysis on Windows systems. Choose the appropriate script based on the level of detail required and the system's capabilities.
+### Prerequisites
 
-## How to install requirements and run the scripts
+- **Python 3.x** (any recent version)
+- **pip** (Python package manager)
+- **PowerShell 5.1+** (for Windows scripts)
+- **Administrator/Root privileges** (for system data collection)
 
-1. **Clone the repository:**
-   ```sh
-   git clone https://github.com/nilsonsangy/forensic-tools.git
-   cd forensic-tools
-   ```
+### Automated Setup (Windows - Recommended)
 
-2. **Linux:**
-   - Give execution permission to the script:
-     ```sh
-     chmod +x linux_collector.sh
-     ```
-   - Run the script:
-     ```sh
-     sudo ./linux_collector.sh
-     ```
+```powershell
+./setup_python_env.ps1
+```
 
-3. **Windows:**
-   - Run `windows_collector.bat` or `windows_collector.ps1` as administrator.
-   - For PowerShell, use:
-     ```powershell
-     .\windows_collector.ps1
-     ```
+This script will:
+- Check if Python is installed
+- Create and activate a virtual environment
+- Upgrade pip
+- Install all required packages from requirements.txt
 
-4. **Python (onion_analyzer):**
-   - Install Python 3.x.
-   - Install the dependencies:
-     ```sh
-     pip install -r requirements.txt
-     ```
-   - Run the script:
-     ```sh
-     python onion_analyzer.py
-     ```
+### Manual Setup
 
-> **Note:** Some scripts require administrator/root privileges and specific system dependencies (e.g., dmidecode, lsof, netstat, etc.).
+**Windows:**
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+**Linux:**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+---
+
+## 📖 Usage
+
+### Windows Data Collection
+
+Collect comprehensive system information for forensic analysis.
+
+```powershell
+# PowerShell version (recommended)
+.\windows_collector.ps1
+
+# Batch version
+.\windows_collector.bat
+```
+
+**Features:**
+- Running processes and services
+- Network connections and routing
+- System information and uptime
+- User accounts and sessions
+- Event logs and installed software
+- Registry information
+
+### Linux Data Collection
+
+Extract volatile data from Linux systems for incident response.
+
+```bash
+# Give execution permission
+chmod +x linux_collector.sh
+
+# Run as root (required for system data)
+sudo ./linux_collector.sh
+```
+
+**Features:**
+- Process information and memory
+- Network connections and interfaces
+- System logs and user sessions
+- File system information
+- Hardware and kernel data
+
+### Steganography Analysis
+
+Hide files in images or extract hidden data using LSB steganography.
+
+```bash
+# Hide a file in an image
+python steg.py embed cover_image.png secret_file.txt output_image.png
+
+# Extract hidden data from an image
+python steg.py extract stego_image.png extracted_file.txt
+```
+
+**Use Cases:**
+- Evidence concealment analysis
+- Malware detection in images
+- Covert communication investigation
+
+### Onion Link Analyzer
+
+Extract and analyze .onion links from websites using Tor Browser.
+
+```bash
+python onion_analyzer.py
+```
+
+**Setup Requirements:**
+- Tor Browser installed
+- `TOR_BROWSER_PATH` environment variable set
+- Or provide path when prompted
+
+**Features:**
+- Automatically extracts .onion links from web pages
+- Opens links in Tor Browser for analysis
+- Supports both Windows and Linux
+
+### Hash Generation
+
+Generate SHA256 hashes for file integrity verification.
+
+```powershell
+# PowerShell script
+.\generate_hashes.ps1
+
+# Or use fsum.exe directly
+.\fsum.exe -sha256 -r "C:\path\to\files"
+```
+
+**Output:**
+- `hashes.txt` file with all file hashes
+- Timestamp of generation
+- SHA256 hash of the hash file itself
+
+### BitLocker Management
+
+Manage BitLocker encryption settings for forensic preparation.
+
+```powershell
+.\bitlocker_disabler.ps1
+```
+
+**Features:**
+- Suspend BitLocker protection
+- Resume BitLocker protection
+- Check BitLocker status
+
+---
+
+## 🔑 Environment Variables
+
+For the Onion Analyzer tool, set the Tor Browser path:
+
+```bash
+# Windows
+set TOR_BROWSER_PATH=C:\Users\Username\Desktop\Tor Browser\Browser\firefox.exe
+
+# Linux
+export TOR_BROWSER_PATH=/usr/bin/tor-browser
+```
+
+---
+
+## ⚙️ Requirements
+
+- **Operating System**: Windows 10/11, Linux (Ubuntu/Debian/CentOS)
+- **Python**: 3.7 or higher
+- **PowerShell**: 5.1+ (Windows)
+- **Administrator/Root**: Required for system data collection
+- **Tor Browser**: For onion link analysis (optional)
+
+### Python Dependencies
+
+```
+requests
+beautifulsoup4
+stegano
+```
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! To contribute:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/YourFeature`)
+3. Commit your changes
+4. Push to your branch
+5. Open a Pull Request
+
+Please follow code style conventions and add documentation for new features.
+
+**Areas for contribution:**
+- Additional forensic tools
+- Cross-platform compatibility improvements
+- Enhanced data collection capabilities
+- Documentation and examples
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+- ✅ Commercial use
+- ✅ Modification
+- ✅ Distribution
+- ✅ Private use
+- ❌ Liability
+- ❌ Warranty
+
+---
+
+## 💝 Donations
+
+If you find this project helpful and would like to support its development, consider making a donation. Your contribution helps keep this toolkit updated and motivates further improvements!
+
+| ☕ Support this project (EN) | ☕ Apoie este projeto (PT-BR) |
+|-----------------------------|------------------------------|
+| If this project helps you or you think it's cool, consider supporting:<br>💳 [PayPal](https://www.paypal.com/donate/?business=7CC3CMJVYYHAC&no_recurring=0&currency_code=BRL)<br>![PayPal QR code](https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://www.paypal.com/donate/?business=7CC3CMJVYYHAC&no_recurring=0&currency_code=BRL) | Se este projeto te ajuda ou você acha legal, considere apoiar:<br>🇧🇷 Pix: `df92ab3c-11e2-4437-a66b-39308f794173`<br>![Pix QR code](https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=df92ab3c-11e2-4437-a66b-39308f794173) |
+
+---
+
+## ⚠️ Disclaimer
+
+This toolkit is for **educational, research, and authorized forensic investigations only**. Use responsibly and ensure compliance with all applicable laws and regulations.
+
+**Important Notes:**
+- Always obtain proper authorization before conducting forensic analysis
+- Some tools require administrator/root privileges
+- Use in controlled environments for testing
+- Respect privacy and data protection regulations
+
+---
+
+## 📞 Contact
+
+- **GitHub Issues**: [Open an issue](https://github.com/nilsonsangy/forensic-tools/issues) for questions or bug reports
+- **Author**: Nilson Sangy
+- **Repository**: [https://github.com/nilsonsangy/forensic-tools](https://github.com/nilsonsangy/forensic-tools)
+
+<div align="center">
+
+**⭐ If you found this project useful, please give it a star!**
+
+Made with ❤️ for the Digital Forensics community
+
+</div>
