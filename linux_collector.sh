@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Author: Nilson Sangy
-# https://github.com/nilsonsangy/tools
+# https://github.com/nilsonsangy/forensic-tools
 
 FOLDERRESULT=`cat /etc/hostname`
 

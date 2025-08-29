@@ -1,3 +1,6 @@
+# Author: Nilson Sangy
+# https://github.com/nilsonsangy/forensic-tools
+
 # Prompt the user to enter the folder path
 $folderPath = Read-Host "Please enter the folder path where the files are located"
 
