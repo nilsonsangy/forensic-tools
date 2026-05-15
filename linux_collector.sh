@@ -3,82 +3,156 @@
 # Author: Nilson Sangy
 # https://github.com/nilsonsangy/forensic-tools
 
-FOLDERRESULT=`cat /etc/hostname`
+RESULTS_ROOT=$1
+if [ -z "$RESULTS_ROOT" ]; then
+    RESULTS_ROOT="$HOME/Downloads"
+fi
 
-clear
+if [ "$(id -u)" -ne 0 ]; then
+    if command -v sudo >/dev/null 2>&1; then
+        echo "This script needs elevated privileges for complete collection. Relaunching with sudo..."
+        exec sudo sh "$0" "$RESULTS_ROOT"
+    else
+        echo "sudo is not available. Some data may be incomplete." >&2
+    fi
+fi
+
+OUTPUT_OWNER=${SUDO_USER:-}
+OUTPUT_GROUP=""
+if [ -n "$OUTPUT_OWNER" ] && [ "$OUTPUT_OWNER" != "root" ]; then
+    OUTPUT_GROUP=$(id -gn "$OUTPUT_OWNER" 2>/dev/null)
+fi
+
+HOSTNAME=$(cat /etc/hostname 2>/dev/null)
+if [ -z "$HOSTNAME" ]; then
+    HOSTNAME=$(hostname 2>/dev/null)
+fi
+if [ -z "$HOSTNAME" ]; then
+    HOSTNAME="linux-host"
+fi
+
+RUN_TIMESTAMP=$(date +"%Y%m%d-%H%M%S" 2>/dev/null)
+if [ -z "$RUN_TIMESTAMP" ]; then
+    RUN_TIMESTAMP="unknown-time"
+fi
+
+FOLDERRESULT="${RESULTS_ROOT%/}/${HOSTNAME}_result_${RUN_TIMESTAMP}"
+
+clear 2>/dev/null
 rm -rf "$FOLDERRESULT"
 
 echo "Creating evidence folder $FOLDERRESULT..."
-mkdir "$FOLDERRESULT"
+mkdir -p "$FOLDERRESULT"
+
+collect_if_exists() {
+    if command -v "$1" >/dev/null 2>&1; then
+        shift
+        "$@"
+    fi
+}
 
 echo "Collecting computer general informations..."
-HOSTNAME=`cat /etc/hostname`
-echo "Computer Name: $HOSTNAME" > ./$FOLDERRESULT/general-informations.txt
+{
+    echo "Computer Name: $HOSTNAME"
+    echo "Uptime: $(uptime 2>/dev/null)"
+    echo "Hostname: $HOSTNAME"
+    echo
+    echo "Kernel: $(uname -a 2>/dev/null)"
+    echo
+    echo "Filesystem and mount details:"
+    df -hT 2>/dev/null
+} > "$FOLDERRESULT/systeminfo.txt"
 
-echo "Collecting Installation date..."
-disk=`df -h | grep '/$' | cut -d' ' -f1`
-installation_date=`tune2fs -l $disk | grep created`
-echo "$installation_date" >> ./$FOLDERRESULT/general-informations.txt
+if command -v tune2fs >/dev/null 2>&1; then
+    disk=$(df -h 2>/dev/null | awk '$NF == "/" { print $1; exit }')
+    if [ -n "$disk" ]; then
+        installation_date=$(tune2fs -l "$disk" 2>/dev/null | grep 'Filesystem created' | head -n 1)
+        if [ -n "$installation_date" ]; then
+            echo "$installation_date" >> "$FOLDERRESULT/systeminfo.txt"
+        fi
+    fi
+fi
 
-echo "Collecting OS uptime..."
-ligado=`uptime`; echo "UPTIME: $ligado" >> ./$FOLDERRESULT/general-informations.txt
-echo "\n" >> ./$FOLDERRESULT/general-informations.txt
+if command -v dmidecode >/dev/null 2>&1; then
+    echo "Collecting hardware informations..."
+    dmidecode -t 1 >> "$FOLDERRESULT/systeminfo.txt" 2>/dev/null
+    bios_release=$(dmidecode -s bios-release-date 2>/dev/null)
+    if [ -n "$bios_release" ]; then
+        printf '\tBIOS Release Date: %s\n' "$bios_release" >> "$FOLDERRESULT/systeminfo.txt"
+    fi
+fi
 
-echo "Collecting hardware informations..."
-dmidecode -t 1 >> ./$FOLDERRESULT/general-informations.txt
-
-echo "Collecting BIOS release date..."
-bios_release=`dmidecode -s bios-release-date`; echo -e "\tBIOS Release Date: $bios_release" >> ./$FOLDERRESULT/general-informations.txt
-
-echo "Collecting CPU informations..."
-lscpu >> ./$FOLDERRESULT/general-informations.txt
-echo "\n\n" >> ./$FOLDERRESULT/general-informations.txt
-
-echo "Collecting disk informations..."
-df -hT >> ./$FOLDERRESULT/general-informations.txt
+if command -v lscpu >/dev/null 2>&1; then
+    echo "Collecting CPU informations..."
+    lscpu >> "$FOLDERRESULT/systeminfo.txt" 2>/dev/null
+fi
 
 echo "Collecting network informations..."
-ip a > ./$FOLDERRESULT/ifconfig.txt
+ip a > "$FOLDERRESULT/network-interfaces.txt" 2>/dev/null
+ip route > "$FOLDERRESULT/routes.txt" 2>/dev/null
 
-echo "Collecting date and time..."
-date > ./$FOLDERRESULT/date_time.txt
+printf '%s\n' "$(date 2>/dev/null)" > "$FOLDERRESULT/date-time.txt"
 
-echo "Collecting command history..."
-cat ~/.bash_history > "./$FOLDERRESULT/history.txt"
-
-echo "Collecting logged users..."
-w > ./$FOLDERRESULT/w.txt
-
-echo "Collecting Open files..."
-lsof -n > ./$FOLDERRESULT/lsof.txt
-
-echo "Collecting connections, ports and process..."
-netstat -putan > ./$FOLDERRESULT/netstat.txt
-
-echo "Collecting process list..."
-ps aux > ./$FOLDERRESULT/ps.txt
-
-echo "Collecting modules informations..."
-lsmod > ./$FOLDERRESULT/modulos.txt 2> /dev/null
-
-echo "Collecting installed packages..."
-if command -v dpkg > /dev/null; then
-    dpkg -l > ./$FOLDERRESULT/installed_packages.txt
-elif command -v rpm > /dev/null; then
-    rpm -qa > ./$FOLDERRESULT/installed_packages.txt
+if [ -f "$HOME/.bash_history" ]; then
+    cp "$HOME/.bash_history" "$FOLDERRESULT/bash-history.txt" 2>/dev/null
 else
-    echo "Package manager not supported" > ./$FOLDERRESULT/installed_packages.txt
+    echo "No bash history file found." > "$FOLDERRESULT/bash-history.txt"
 fi
 
-echo "Collecting users..."
-if command -v getent > /dev/null; then
-    getent passwd | cut -d: -f1 > ./$FOLDERRESULT/users.txt
-else
-    echo "Command 'getent' not found. Unable to collect users." > ./$FOLDERRESULT/users.txt
+w > "$FOLDERRESULT/logged-users.txt" 2>/dev/null
+who > "$FOLDERRESULT/connected-users.txt" 2>/dev/null
+
+if command -v lsof >/dev/null 2>&1; then
+    lsof -n > "$FOLDERRESULT/lsof.txt" 2>/dev/null
 fi
 
-echo "Hashing... "
-sha256sum ./$FOLDERRESULT/*.txt > ./$FOLDERRESULT/hashes.txt
+if command -v netstat >/dev/null 2>&1; then
+    netstat -putan > "$FOLDERRESULT/netstat.txt" 2>/dev/null
+else
+    ss -tulpna > "$FOLDERRESULT/netstat.txt" 2>/dev/null
+fi
 
-echo "Terminated."
+ps aux > "$FOLDERRESULT/process-list.txt" 2>/dev/null
+ps -eo user,pid,ppid,cmd > "$FOLDERRESULT/process-detailed.txt" 2>/dev/null
 
+if command -v lsmod >/dev/null 2>&1; then
+    lsmod > "$FOLDERRESULT/loaded-modules.txt" 2>/dev/null
+fi
+
+if command -v dpkg >/dev/null 2>&1; then
+    dpkg -l > "$FOLDERRESULT/installed-packages.txt" 2>/dev/null
+elif command -v rpm >/dev/null 2>&1; then
+    rpm -qa > "$FOLDERRESULT/installed-packages.txt" 2>/dev/null
+else
+    echo "Package manager not supported" > "$FOLDERRESULT/installed-packages.txt"
+fi
+
+if command -v getent >/dev/null 2>&1; then
+    getent passwd | cut -d: -f1 > "$FOLDERRESULT/users.txt" 2>/dev/null
+else
+    echo "Command 'getent' not found. Unable to collect users." > "$FOLDERRESULT/users.txt"
+fi
+
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl list-unit-files --type=service > "$FOLDERRESULT/services.txt" 2>/dev/null
+    systemctl list-timers --all > "$FOLDERRESULT/scheduled-timers.txt" 2>/dev/null
+fi
+
+crontab -l > "$FOLDERRESULT/crontab.txt" 2>/dev/null
+
+if command -v journalctl >/dev/null 2>&1; then
+    journalctl -n 1000 > "$FOLDERRESULT/journal-logs.txt" 2>/dev/null
+fi
+
+if command -v uname >/dev/null 2>&1; then
+    uname -a > "$FOLDERRESULT/kernel-info.txt" 2>/dev/null
+fi
+
+echo "Hashing..."
+sha256sum "$FOLDERRESULT"/* > "$FOLDERRESULT/hashes.txt" 2>/dev/null
+
+if [ -n "$OUTPUT_OWNER" ] && [ -n "$OUTPUT_GROUP" ]; then
+    chown -R "$OUTPUT_OWNER:$OUTPUT_GROUP" "$FOLDERRESULT" 2>/dev/null
+fi
+
+echo "Terminated. Results saved in $FOLDERRESULT"

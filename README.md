@@ -51,56 +51,20 @@
 
 ---
 
-## 🚀 Quick Start
-
-```powershell
-# Clone the repository
-git clone https://github.com/nilsonsangy/forensic-tools.git
-cd forensic-tools
-
-# Run the environment preparation script (Windows)
-./setup_python_env.ps1
-```
-
-Or set up manually (see Installation).
-
----
-
-## 🔧 Installation
-
-### Prerequisites
-
-- **Python 3.x** (any recent version)
-- **pip** (Python package manager)
-- **PowerShell 5.1+** (for Windows scripts)
-- **Administrator/Root privileges** (for system data collection)
-
-### Automated Setup (Windows - Recommended)
-
-```powershell
-./setup_python_env.ps1
-```
-
-This script will:
-- Check if Python is installed
-- Create and activate a virtual environment
-- Upgrade pip
-- Install all required packages from requirements.txt
-
-### Manual Setup
+## 🚀 Python Environment Configuration
 
 **Windows:**
 ```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
 **Linux:**
 ```bash
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
@@ -183,6 +147,16 @@ python onion_analyzer.py
 - Opens links in Tor Browser for analysis
 - Supports both Windows and Linux
 
+Set the Tor Browser path:
+
+```bash
+# Windows
+set TOR_BROWSER_PATH=C:\Users\Username\Desktop\Tor Browser\Browser\firefox.exe
+
+# Linux
+export TOR_BROWSER_PATH=/usr/bin/tor-browser
+```
+
 ### Hash Generation
 
 Generate SHA256 hashes for file integrity verification.
@@ -215,71 +189,6 @@ Manage BitLocker encryption settings for forensic preparation.
 
 ---
 
-## 🔑 Environment Variables
-
-For the Onion Analyzer tool, set the Tor Browser path:
-
-```bash
-# Windows
-set TOR_BROWSER_PATH=C:\Users\Username\Desktop\Tor Browser\Browser\firefox.exe
-
-# Linux
-export TOR_BROWSER_PATH=/usr/bin/tor-browser
-```
-
----
-
-## ⚙️ Requirements
-
-- **Operating System**: Windows 10/11, Linux (Ubuntu/Debian/CentOS)
-- **Python**: 3.7 or higher
-- **PowerShell**: 5.1+ (Windows)
-- **Administrator/Root**: Required for system data collection
-- **Tor Browser**: For onion link analysis (optional)
-
-### Python Dependencies
-
-```
-requests
-beautifulsoup4
-stegano
-```
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! To contribute:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/YourFeature`)
-3. Commit your changes
-4. Push to your branch
-5. Open a Pull Request
-
-Please follow code style conventions and add documentation for new features.
-
-**Areas for contribution:**
-- Additional forensic tools
-- Cross-platform compatibility improvements
-- Enhanced data collection capabilities
-- Documentation and examples
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-- ✅ Commercial use
-- ✅ Modification
-- ✅ Distribution
-- ✅ Private use
-- ❌ Liability
-- ❌ Warranty
-
----
-
 ## 💝 Donations
 
 If you find this project helpful and would like to support its development, consider making a donation. Your contribution helps keep this toolkit updated and motivates further improvements!
@@ -292,21 +201,9 @@ If you find this project helpful and would like to support its development, cons
 
 ## ⚠️ Disclaimer
 
+This project is licensed under the MIT License.
+
 This toolkit is for **educational, research, and authorized forensic investigations only**. Use responsibly and ensure compliance with all applicable laws and regulations.
-
-**Important Notes:**
-- Always obtain proper authorization before conducting forensic analysis
-- Some tools require administrator/root privileges
-- Use in controlled environments for testing
-- Respect privacy and data protection regulations
-
----
-
-## 📞 Contact
-
-- **GitHub Issues**: [Open an issue](https://github.com/nilsonsangy/forensic-tools/issues) for questions or bug reports
-- **Author**: Nilson Sangy
-- **Repository**: [https://github.com/nilsonsangy/forensic-tools](https://github.com/nilsonsangy/forensic-tools)
 
 <div align="center">
 

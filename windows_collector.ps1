@@ -1,97 +1,163 @@
-# Prompt the user to enter the folder path for saving results
-$resultFolder = Read-Host "Enter the folder path where you want the results to be saved (a folder with the hostname will be created inside this path)"
+param(
+    [string]$ResultsFolder,
+    [string]$SysinternalsFolder
+)
 
-# Create a folder for the results
-$hostname = $env:COMPUTERNAME
-$computerResultFolder = Join-Path -Path $resultFolder -ChildPath "${hostname}_result"
-
-if (Test-Path -Path $computerResultFolder) {
-    Remove-Item -Path $computerResultFolder -Recurse -Force
-    Write-Host "Old folder '$computerResultFolder' removed"
+# Relaunch elevated if not running as Administrator
+if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host "Script is not running as Administrator. Relaunching with elevated privileges..."
+    Start-Process -FilePath powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
+    exit
 }
 
-New-Item -ItemType Directory -Path $computerResultFolder | Out-Null
-Write-Host "Folder '$computerResultFolder' created"
+# If no results folder was passed, default to the current user's Downloads folder
+if (-not $ResultsFolder -or $ResultsFolder -eq "") {
+    $ResultsFolder = Join-Path $env:USERPROFILE "Downloads"
+}
 
-# Prompt the user to enter the Sysinternals folder path
-$sysinternalsFolder = Read-Host "Enter the Sysinternals folder path"
+# Map parameter values to variables used later in the script
+$resultsFolder = $ResultsFolder
+$sysinternalsFolder = $SysinternalsFolder
+
+## Author: Nilson Sangy
+## https://github.com/nilsonsangy/forensic-tools/blob/main/windows_collector.ps1
+
+Write-Host "Volatile data extraction script on Windows."
+
+# ensure results folder variable
+$computerName = $env:COMPUTERNAME
+$runTimestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$targetFolder = Join-Path $resultsFolder "${computerName}_result_$runTimestamp"
+
+# Remove old folder if exists
+if (Test-Path $targetFolder) {
+    Remove-Item -Path $targetFolder -Recurse -Force
+    Write-Host "Old folder '$targetFolder' removed"
+}
+
+# Create result folder and dumps subfolder
+New-Item -Path $targetFolder -ItemType Directory -Force | Out-Null
+New-Item -Path (Join-Path $targetFolder "dumps") -ItemType Directory -Force | Out-Null
+Write-Host "Folder '$targetFolder' created"
+
+function Write-CommandOutput {
+    param(
+        [string]$FileName,
+        [scriptblock]$Command
+    )
+
+    & $Command | Out-File -FilePath (Join-Path $targetFolder $FileName)
+}
 
 # Collect date and time
-Get-Date | Out-File -FilePath "$computerResultFolder\date-time.txt"
-Get-TimeZone | Out-File -Append -FilePath "$computerResultFolder\date-time.txt"
+Get-Date | Out-File -FilePath "$targetFolder\date-time.txt"
+Get-TimeZone | Out-File -Append -FilePath "$targetFolder\date-time.txt"
 
 # Collect computer serial number
-Get-WmiObject -Class Win32_BIOS | Select-Object SerialNumber | Out-File -FilePath "$computerResultFolder\serialnumber.txt"
+Get-CimInstance Win32_BIOS | Select-Object -ExpandProperty SerialNumber | Out-File -FilePath "$targetFolder\serialnumber.txt"
 
-# Collect computer SID
-& "$sysinternalsFolder\psgetsid.exe" -nobanner -accepteula | Out-File -FilePath "$computerResultFolder\SID.txt"
+# Collect computer SID (if psgetsid available)
+if ($sysinternalsFolder -and (Test-Path (Join-Path $sysinternalsFolder 'psgetsid.exe'))) {
+    & "$(Join-Path $sysinternalsFolder 'psgetsid.exe')" -nobanner -accepteula | Out-File -FilePath "$targetFolder\SID.txt"
+} else {
+    whoami /user | Out-File -FilePath "$targetFolder\SID.txt"
+}
 
 # Collect system information
-systeminfo | Out-File -FilePath "$computerResultFolder\systeminfo.txt"
-& "$sysinternalsFolder\psinfo.exe" -d -s -h -nobanner -accepteula | Out-File -Append -FilePath "$computerResultFolder\systeminfo.txt"
+systeminfo | Out-File -FilePath "$targetFolder\systeminfo.txt"
+if ($sysinternalsFolder -and (Test-Path (Join-Path $sysinternalsFolder 'psinfo.exe'))) {
+    & "$(Join-Path $sysinternalsFolder 'psinfo.exe')" -d -s -h -nobanner -accepteula | Out-File -Append -FilePath "$targetFolder\systeminfo.txt"
+} else {
+    Get-CimInstance Win32_OperatingSystem | Out-File -Append -FilePath "$targetFolder\systeminfo.txt"
+}
 
-# Collect network interface information
-ipconfig /all | Out-File -FilePath "$computerResultFolder\ipconfig.txt"
+# Collect network interfaces info
+ipconfig /all | Out-File -FilePath "$targetFolder\ipconfig-all.txt"
 
-# Collect command history
-(Get-History).CommandLine | Out-File -FilePath "$computerResultFolder\command-history.txt"
+# Collect command history (PowerShell history)
+try {
+    (Get-Content (Get-PSReadlineOption).HistorySavePath) | Out-File "$targetFolder\powershell-history.txt"
+} catch {
+    Write-Host "Could not read PSReadline history" -ForegroundColor Yellow
+}
 
-# Collect logged-on users
-& "$sysinternalsFolder\psloggedon.exe" -nobanner -accepteula | Out-File -FilePath "$computerResultFolder\loggedon.txt"
+# Collect logged on users
+if ($sysinternalsFolder -and (Test-Path (Join-Path $sysinternalsFolder 'psloggedon.exe'))) {
+    & "$(Join-Path $sysinternalsFolder 'psloggedon.exe')" -nobanner -accepteula | Out-File -FilePath "$targetFolder\loggedon.txt"
+} else {
+    query user | Out-File -FilePath "$targetFolder\loggedon.txt"
+}
 
-# Collect network statistics
-netstat -nabo | Out-File -FilePath "$computerResultFolder\netstat.txt"
+# Collect network statistics and routes
+netstat -nabo | Out-File -FilePath "$targetFolder\netstat.txt"
+netstat -rn | Out-File -FilePath "$targetFolder\routes.txt"
 
-# Collect route table
-route print | Out-File -FilePath "$computerResultFolder\routes.txt"
+# Collect network shares and open files
+net use | Out-File -FilePath "$targetFolder\network-shares.txt"
+net file | Out-File -FilePath "$targetFolder\open-files.txt"
+net sessions | Out-File -FilePath "$targetFolder\network-shares-sessions.txt"
 
-# Collect network shares
-net use | Out-File -FilePath "$computerResultFolder\network-shares.txt"
+# Collect process information
+if ($sysinternalsFolder -and (Test-Path (Join-Path $sysinternalsFolder 'pslist.exe'))) {
+    & "$(Join-Path $sysinternalsFolder 'pslist.exe')" -nobanner -accepteula | Out-File -FilePath "$targetFolder\process-list.txt"
+} else {
+    Get-Process | Out-File -FilePath "$targetFolder\process-list.txt"
+}
 
-# Collect files opened on the network
-net file | Out-File -FilePath "$computerResultFolder\open-files.txt"
+tasklist /M | Out-File -FilePath "$targetFolder\process-modules.txt"
 
-# Collect active sessions from network shares
-net sessions | Out-File -FilePath "$computerResultFolder\network-shares-sessions.txt"
-
-# Collect process list
-& "$sysinternalsFolder\pslist.exe" -nobanner -accepteula | Out-File -FilePath "$computerResultFolder\process-list.txt"
-
-# Collect process list and modules
-tasklist /M | Out-File -FilePath "$computerResultFolder\process-modules.txt"
-
-# Collect processes from each logon session
-& "$sysinternalsFolder\logonsessions.exe" -p -nobanner -accepteula | Out-File -FilePath "$computerResultFolder\process-logonsessions.txt"
+if ($sysinternalsFolder -and (Test-Path (Join-Path $sysinternalsFolder 'logonsessions.exe'))) {
+    & "$(Join-Path $sysinternalsFolder 'logonsessions.exe')" -p -nobanner -accepteula | Out-File -FilePath "$targetFolder\process-logonsessions.txt"
+} else {
+    Get-CimInstance Win32_LogonSession | Out-File -FilePath "$targetFolder\process-logonsessions.txt"
+}
 
 # Collect scheduled tasks
-schtasks /query /fo LIST /v | Out-File -FilePath "$computerResultFolder\scheduled-tasks.txt"
+schtasks /query /fo LIST /v | Out-File -FilePath "$targetFolder\scheduled-tasks.txt"
 
 # Collect installed programs
 Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* |
     Select-Object DisplayName, DisplayVersion, Publisher, InstallDate |
-    Out-File -FilePath "$computerResultFolder\installed-programs.txt"
+    Out-File -FilePath "$targetFolder\installed-programs.txt"
 
 # Collect Windows Event Logs (System, Application, Security)
-Get-WinEvent -LogName System -MaxEvents 1000 | Export-Csv -Path "$computerResultFolder\eventlog-system.csv" -NoTypeInformation
-Get-WinEvent -LogName Application -MaxEvents 1000 | Export-Csv -Path "$computerResultFolder\eventlog-application.csv" -NoTypeInformation
-Get-WinEvent -LogName Security -MaxEvents 1000 | Export-Csv -Path "$computerResultFolder\eventlog-security.csv" -NoTypeInformation
+Get-WinEvent -LogName System -MaxEvents 1000 | Format-List * -Force | Out-File -FilePath "$targetFolder\eventlog-system.txt"
+Get-WinEvent -LogName Application -MaxEvents 1000 | Format-List * -Force | Out-File -FilePath "$targetFolder\eventlog-application.txt"
+Get-WinEvent -LogName Security -MaxEvents 1000 | Format-List * -Force | Out-File -FilePath "$targetFolder\eventlog-security.txt"
 
-# Collect user accounts
-Get-LocalUser | Out-File -FilePath "$computerResultFolder\local-users.txt"
-
-# Collect group memberships
+# Collect user accounts and group memberships
+Get-LocalUser | Out-File -FilePath "$targetFolder\local-users.txt"
 Get-LocalGroup | ForEach-Object {
-    Get-LocalGroupMember -Group $_.Name | Out-File -Append -FilePath "$computerResultFolder\group-memberships.txt"
+    Get-LocalGroupMember -Group $_.Name | Out-File -Append -FilePath "$targetFolder\group-memberships.txt"
 }
 
 # Collect running services
-Get-Service | Out-File -FilePath "$computerResultFolder\services.txt"
+Get-Service | Out-File -FilePath "$targetFolder\services.txt"
 
-# Collect autorun programs
-& "$sysinternalsFolder\autoruns.exe" -a -nobanner -accepteula | Out-File -FilePath "$computerResultFolder\autoruns.txt"
+# Collect Credential Guard information when available
+if ($sysinternalsFolder -and (Test-Path (Join-Path $sysinternalsFolder 'dgreadiness_v3.6.exe'))) {
+    $credentialGuardOutput = & (Join-Path $sysinternalsFolder 'dgreadiness_v3.6.exe') -status 2>&1
+    if ($credentialGuardOutput) {
+        $credentialGuardOutput | Out-File -FilePath "$targetFolder\credential-guard-info.txt"
+    } else {
+        Get-CimInstance Win32_DeviceGuard | Format-List * -Force | Out-File -FilePath "$targetFolder\credential-guard-info.txt"
+    }
+} else {
+    Get-CimInstance Win32_DeviceGuard | Format-List * -Force | Out-File -FilePath "$targetFolder\credential-guard-info.txt"
+}
+
+# Collect autoruns if available
+if ($sysinternalsFolder -and (Test-Path (Join-Path $sysinternalsFolder 'autoruns.exe'))) {
+    $autorunsPath = Join-Path $sysinternalsFolder 'autoruns.exe'
+    & $autorunsPath -a -nobanner -accepteula | Out-File -FilePath "$targetFolder\startup-persistence.txt"
+} else {
+    Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Run* -ErrorAction SilentlyContinue | Format-List * -Force | Out-File -FilePath "$targetFolder\startup-persistence.txt"
+    Get-ChildItem "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Startup" -ErrorAction SilentlyContinue | Format-List * -Force | Out-File -Append -FilePath "$targetFolder\startup-persistence.txt"
+    Get-ChildItem "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup" -ErrorAction SilentlyContinue | Format-List * -Force | Out-File -Append -FilePath "$targetFolder\startup-persistence.txt"
+}
 
 # Collect user account information
-wmic useraccount get /all | Out-File -FilePath "$computerResultFolder\useraccount-info.txt"
+wmic useraccount get /all | Out-File -FilePath "$targetFolder\user-accounts.txt"
 
 # Collect process integrity levels
 Get-CimInstance Win32_Process | ForEach-Object {
@@ -109,119 +175,66 @@ Get-CimInstance Win32_Process | ForEach-Object {
             IntegrityLevel = $integrityLevel
         }
     }
-} | Out-File -FilePath "$computerResultFolder\process-integrity-levels.txt"
+} | Out-File -FilePath "$targetFolder\process-integrity-levels.txt"
 
 # Collect detailed process list
-Get-Process | Select-Object Name, Id, CPU, WorkingSet, StartTime, Path | Out-File -FilePath "$computerResultFolder\detailed-process-list.txt"
+Get-Process | Select-Object Name, Id, CPU, WorkingSet, StartTime, Path | Out-File -FilePath "$targetFolder\process-detailed-list.txt"
 
 # Collect shared folders and files
-net share | Out-File -FilePath "$computerResultFolder\shared-folders.txt"
+net share | Out-File -FilePath "$targetFolder\network-shares.txt"
 
-# Generate hashes.txt
-Set-Location -Path $computerResultFolder
-Get-ChildItem -File | ForEach-Object {
-    Get-FileHash -Path $_.FullName -Algorithm SHA256 | ForEach-Object {
-        "$($_.Hash) $($_.Path)" | Out-File -Append -FilePath "$computerResultFolder\hashes.txt"
+# --- New: Collect drivers and driver binaries hashes
+Get-CimInstance Win32_SystemDriver | Select-Object Name,State,StartMode,PathName,DisplayName | Out-File -FilePath "$targetFolder\drivers.txt"
+
+$driverPaths = Get-CimInstance Win32_SystemDriver | ForEach-Object {
+    $p = ($_.PathName -replace '"','') -replace ' -.*$',''
+    if ($p -and (Test-Path $p)) { $p }
+}
+if ($driverPaths) {
+    foreach ($p in $driverPaths) {
+        try {
+            $h = Get-FileHash -Path $p -Algorithm SHA256 -ErrorAction Stop
+            "$($h.Hash) $p" | Out-File -Append -FilePath "$targetFolder\driver-hashes.txt"
+        } catch {
+            "Could not hash $p" | Out-File -Append -FilePath "$targetFolder\driver-hashes.txt"
+        }
     }
 }
 
-# Check if UAC is enabled
-Write-Host "Checking if UAC is enabled"
-(Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name EnableLUA).EnableLUA | Out-File -FilePath "$computerResultFolder\uac-status.txt"
-
-# Check if anonymous enumeration of SAM accounts and shares is enabled
-Write-Host "Checking anonymous enumeration of SAM accounts and shares"
-(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name RestrictAnonymous).RestrictAnonymous | Out-File -FilePath "$computerResultFolder\anonymous-enum-status.txt"
-
-# Check if Remote Desktop is enabled
-Write-Host "Checking if Remote Desktop is enabled"
-(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server" -Name fDenyTSConnections).fDenyTSConnections | Out-File -FilePath "$computerResultFolder\remote-desktop-status.txt"
-
-# Check if antivirus is enabled and updated
-Write-Host "Checking if antivirus is enabled and updated"
-Get-CimInstance -Namespace "root/SecurityCenter2" -ClassName AntiVirusProduct | Select-Object displayName,productState | Out-File -FilePath "$computerResultFolder\antivirus-status.txt"
-
-# Check if Windows Firewall is enabled and updated
-Write-Host "Checking if Windows Firewall is enabled and updated"
-netsh advfirewall show allprofiles | Out-File -FilePath "$computerResultFolder\firewall-status.txt"
-
-Write-Host "Volatile data extraction finished. Results saved in '$computerResultFolder'."
-# Author: Nilson Sangy
-# https://github.com/nilsonsangy/forensic-tools/blob/main/windows_collector.ps1
-
-Write-Host "Volatile data extraction script on Windows."
-Write-Host "Run with admin privileges."
-$resultsFolder = Read-Host "Insert the folder path where you want the result to be saved (a folder with the host name will be created inside this path)"
-
-$computerName = $env:COMPUTERNAME
-$targetFolder = Join-Path $resultsFolder "${computerName}_result"
-
-# Remove old folder if exists
-if (Test-Path $targetFolder) {
-    Remove-Item -Path $targetFolder -Recurse -Force
-    Write-Host "Old folder '$targetFolder' removed"
+# --- New: Memory dump using native MiniDump if available
+$miniDumpSource = @"
+using System;
+using System.Runtime.InteropServices;
+public static class MiniDumpNative {
+    [DllImport("dbghelp.dll", SetLastError=true)]
+    public static extern bool MiniDumpWriteDump(IntPtr hProcess, int processId, IntPtr hFile, int dumpType, IntPtr expParam, IntPtr userStreamParam, IntPtr callbackParam);
+}
+"@
+Add-Type $miniDumpSource -ErrorAction SilentlyContinue
+try {
+    $lsass = Get-Process -Name lsass -ErrorAction SilentlyContinue
+    if ($lsass) {
+        $dumpPath = Join-Path $targetFolder 'dumps\lsass.dmp'
+        $fileStream = [System.IO.File]::Open($dumpPath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
+        try {
+            $handle = $fileStream.SafeFileHandle.DangerousGetHandle()
+            $dumpSucceeded = [MiniDumpNative]::MiniDumpWriteDump($lsass.Handle, $lsass.Id, $handle, 2, [IntPtr]::Zero, [IntPtr]::Zero, [IntPtr]::Zero)
+            if (-not $dumpSucceeded -or ((Test-Path $dumpPath) -and ((Get-Item $dumpPath).Length -eq 0))) {
+                Remove-Item -Path $dumpPath -Force -ErrorAction SilentlyContinue
+                Write-Host "Native MiniDump failed" -ForegroundColor Yellow
+            }
+        } finally {
+            $fileStream.Dispose()
+        }
+    }
+} catch {
+    Write-Host "Native MiniDump failed" -ForegroundColor Yellow
 }
 
-# Create result folder
-New-Item -Path $targetFolder -ItemType Directory | Out-Null
-Write-Host "Folder '$targetFolder' created"
-
-# Ask for Sysinternals folder
-$sysinternalsFolder = Read-Host "This script uses some tools of Sysinternals, so insert Sysinternals folder path in your system"
-
-# Collect date and time
-Get-Date | Out-File -FilePath "$targetFolder\date-time.txt"
-Get-WmiObject Win32_OperatingSystem | Select-Object -ExpandProperty CurrentTimeZone | Out-File -Append "$targetFolder\date-time.txt"
-
-# Collect computer serial number
-Get-WmiObject Win32_BIOS | Select-Object -ExpandProperty SerialNumber | Out-File "$targetFolder\serialnumber.txt"
-
-# Collect computer SID
-& "$sysinternalsFolder\psgetsid.exe" -nobanner -accepteula | Out-File "$targetFolder\SID.txt"
-
-# Collect system information
-systeminfo | Out-File "$targetFolder\systeminfo.txt"
-Add-Content "$targetFolder\systeminfo.txt" ""
-Add-Content "$targetFolder\systeminfo.txt" ""
-& "$sysinternalsFolder\psinfo.exe" -d -s -h -nobanner -accepteula | Out-File "$targetFolder\systeminfo.txt" -Append
-
-# Collect network interfaces info
-ipconfig /all | Out-File "$targetFolder\ipconfig.txt"
-
-# Collect command history (PowerShell history)
-(Get-Content (Get-PSReadlineOption).HistorySavePath) | Out-File "$targetFolder\command-history.txt"
-
-# Collect logged on users
-& "$sysinternalsFolder\psloggedon.exe" -nobanner -accepteula | Out-File "$targetFolder\loggedon.txt"
-
-# Collect network statistics
-netstat -nabo | Out-File "$targetFolder\netstat.txt"
-
-# Collect route table
-netstat -rn | Out-File "$targetFolder\routes.txt"
-
-# Collect network shares
-net use | Out-File "$targetFolder\network-shares.txt"
-
-# Collect files opened on the network
-net file | Out-File "$targetFolder\open-files.txt"
-
-# Collect active sessions from network shares
-net sessions | Out-File "$targetFolder\network-shares-sessions.txt"
-
-# Collect process list
-& "$sysinternalsFolder\pslist.exe" -nobanner -accepteula | Out-File "$targetFolder\process-list.txt"
-
-# Collect process list and modules
-tasklist /M | Out-File "$targetFolder\process-modules.txt"
-
-# Collect processes from each logon session
-& "$sysinternalsFolder\logonsessions.exe" -p -nobanner -accepteula | Out-File "$targetFolder\process-logonsessions.txt"
-
-# Generate hashes.txt (requires fsum.exe in PATH or in Sysinternals folder)
-$fsumPath = "fsum.exe"
-if (-not (Get-Command $fsumPath -ErrorAction SilentlyContinue)) {
-    $fsumPath = Join-Path $sysinternalsFolder "fsum.exe"
+# Generate hashes.txt for collected text files and driver files
+$fsumPath = 'fsum.exe'
+if (-not (Get-Command $fsumPath -ErrorAction SilentlyContinue) -and $sysinternalsFolder) {
+    $fsumPath = Join-Path $sysinternalsFolder 'fsum.exe'
 }
 if (Test-Path $fsumPath) {
     Push-Location $targetFolder
@@ -230,8 +243,16 @@ if (Test-Path $fsumPath) {
     Pop-Location
     Write-Host "Hashes.txt generated."
 } else {
-    Write-Host "fsum.exe not found. Skipping hash generation." -ForegroundColor Yellow
+    # fallback to Get-FileHash for each file
+    Get-ChildItem -Path $targetFolder -Recurse -File | ForEach-Object {
+        try {
+            $hash = Get-FileHash -Path $_.FullName -Algorithm SHA256
+            "$($hash.Hash) $($_.FullName)"
+        } catch {
+            "Could not hash $($_.FullName)"
+        }
+    } | Out-File -FilePath (Join-Path $targetFolder 'hashes.txt')
 }
 
-Write-Host "Volatile data extraction finished."
+Write-Host "Volatile data extraction finished. Results saved in '$targetFolder'."
 Pause
