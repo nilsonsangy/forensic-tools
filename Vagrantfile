@@ -14,7 +14,6 @@
 #   1. VMware Workstation Pro instalado
 #   2. Vagrant instalado (https://www.vagrantup.com)
 #   3. Plugin:  vagrant plugin install vagrant-vmware-desktop
-#   4. Licenca do plugin (paga, da HashiCorp): vagrant plugin license
 #
 # Uso:
 #   vagrant up                 # sobe as duas VMs
@@ -23,8 +22,8 @@
 #   vagrant halt / vagrant destroy
 #
 # Rede interna (isolada, somente entre as VMs e o host):
-#   Windows: 192.168.56.10
-#   Linux:   192.168.56.20
+#   Windows: 10.10.10.10
+#   Linux:   10.10.10.20
 # Alem da rede interna, cada VM mantem a interface NAT padrao do VMware,
 # que garante acesso a Internet (para updates, downloads de ferramentas etc.).
 # =============================================================================
@@ -46,8 +45,8 @@ Vagrant.configure("2") do |config|
     win.vm.box = "gusztavvargadr/windows-10"
     win.vm.hostname = "forensic-win10"
 
-    # Rede interna isolada (host-only)
-    win.vm.network "private_network", ip: "192.168.56.10"
+    # Rede interna isolada (host-only no VMnet1)
+    win.vm.network "private_network", ip: "10.10.10.10"
 
     # Comunicacao via WinRM (padrao para boxes Windows)
     win.vm.communicator = "winrm"
@@ -64,16 +63,16 @@ Vagrant.configure("2") do |config|
   end
 
   # ---------------------------------------------------------------------------
-  # VM 2 - Ubuntu Desktop 20.04 (leve, com GUI) - alvo de coleta em Linux
-  # Box: peru/ubuntu-20.04-desktop-amd64 (Ubuntu Desktop, GUI)
+  # VM 2 - Ubuntu Desktop (leve, com GUI) - alvo de coleta em Linux
+  # Box: gusztavvargadr/ubuntu-desktop (Ubuntu Desktop, GUI)
   # Provider vmware_desktop disponivel no Vagrant Cloud.
   # ---------------------------------------------------------------------------
   config.vm.define "ubuntu" do |lnx|
-    lnx.vm.box = "peru/ubuntu-20.04-desktop-amd64"
+    lnx.vm.box = "gusztavvargadr/ubuntu-desktop"
     lnx.vm.hostname = "forensic-ubuntu"
 
-    # Rede interna isolada (host-only)
-    lnx.vm.network "private_network", ip: "192.168.56.20"
+    # Rede interna isolada (host-only no VMnet1)
+    lnx.vm.network "private_network", ip: "10.10.10.20"
 
     lnx.vm.provider "vmware_desktop" do |v|
       v.gui = true                       # abre com interface grafica
